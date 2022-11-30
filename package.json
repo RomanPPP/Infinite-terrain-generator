@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "graphics": "https://github.com/RomanPPP/graphics/tarball/master",
     "webpack": "^5.74.0",
     "webpack-cli": "^4.10.0"
   }
