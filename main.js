@@ -1,46 +1,50 @@
-import { m4, vec3 } from "math";
-const cPos = [0, 50, 5];
-const cRot = [0, 0, 0];
+import {m4} from 'math'
+import { draw, updateTerrainGenerator } from './src/render';
+import ReactDOM from 'react-dom/client';
+import React from 'react';
+import App from './ui/App.jsx';
+const cameraPosition = [0, 70, 5];
+const cameraRotation = [0, 0, 0];
 const controls = {
-  ArrowDown: () => (cRot[0] -= 0.1),
-  ArrowUp: () => (cRot[0] += 0.1),
-  ArrowLeft: () => (cRot[1] += 0.1),
-  ArrowRight: () => (cRot[1] -= 0.1),
+  ArrowDown: () => (cameraRotation[0] -= 0.1),
+  ArrowUp: () => (cameraRotation[0] += 0.1),
+  ArrowLeft: () => (cameraRotation[1] += 0.1),
+  ArrowRight: () => (cameraRotation[1] -= 0.1),
   w: () => {
     const delta = m4.transformPoint(
-      m4.xRotate(m4.yRotation(cRot[1]), cRot[0]),
+      m4.xRotate(m4.yRotation(cameraRotation[1]), cameraRotation[0]),
       [0, 0, -1]
     );
-    cPos[0] += delta[0];
-    cPos[1] += delta[1];
-    cPos[2] += delta[2];
+    cameraPosition[0] += delta[0];
+    cameraPosition[1] += delta[1];
+    cameraPosition[2] += delta[2];
   },
   s: () => {
     const delta = m4.transformPoint(
-      m4.xRotate(m4.yRotation(cRot[1]), cRot[0]),
+      m4.xRotate(m4.yRotation(cameraRotation[1]), cameraRotation[0]),
       [0, 0, 1]
     );
-    cPos[0] += delta[0];
-    cPos[1] += delta[1];
-    cPos[2] += delta[2];
+    cameraPosition[0] += delta[0];
+    cameraPosition[1] += delta[1];
+    cameraPosition[2] += delta[2];
   },
   a: () => {
     const delta = m4.transformPoint(
-      m4.xRotate(m4.yRotation(cRot[1]), cRot[0]),
+      m4.xRotate(m4.yRotation(cameraRotation[1]), cameraRotation[0]),
       [-1, 0, 0]
     );
-    cPos[0] += delta[0];
-    cPos[1] += delta[1];
-    cPos[2] += delta[2];
+    cameraPosition[0] += delta[0];
+    cameraPosition[1] += delta[1];
+    cameraPosition[2] += delta[2];
   },
   d: () => {
     const delta = m4.transformPoint(
-      m4.xRotate(m4.yRotation(cRot[1]), cRot[0]),
+      m4.xRotate(m4.yRotation(cameraRotation[1]), cameraRotation[0]),
       [1, 0, 0]
     );
-    cPos[0] += delta[0];
-    cPos[1] += delta[1];
-    cPos[2] += delta[2];
+    cameraPosition[0] += delta[0];
+    cameraPosition[1] += delta[1];
+    cameraPosition[2] += delta[2];
   },
 };
 const mouseControls = {
@@ -52,179 +56,80 @@ const mouseControls = {
     const deltaY = e.offsetY - this.lastY;
     this.lastY = e.offsetY;
 
-    cRot[1] -= deltaX * 0.005;
-    cRot[0] -= deltaY * 0.005;
+    cameraRotation[1] -= deltaX * 0.005;
+    cameraRotation[0] -= deltaY * 0.005;
   },
 };
+const canvas = document.getElementById('canvas')
 document.onkeydown = (e) => {
   if (!controls[e.key]) return;
   controls[e.key]();
 };
-document.onmousedown = (e) => {
+canvas.onmousedown = (e) => {
   mouseControls.lastY = e.offsetY;
   mouseControls.lastX = e.offsetX;
-  document.onmousemove = mouseControls.mousemove.bind(mouseControls);
-  document.onmouseup = () => {
-    document.onmousemove = null;
+  canvas.onmousemove = mouseControls.mousemove.bind(mouseControls);
+  canvas.onmouseup = () => {
+    canvas.onmousemove = null;
   };
 };
-let cameraMatrix = m4.translation(...cPos);
-cameraMatrix = m4.yRotate(cameraMatrix, cRot[1]);
-cameraMatrix = m4.xRotate(cameraMatrix, cRot[0]);
-import {
-  ArrayDataFromGltf,
-  PrimitiveRenderInfoFromArrayData,
-  EntityDataFromGltf,
-  getGlContext,
-  resizeCanvasToDisplaySize,
-  ProgramInfo,
-  MeshRenderer,
-  Drawer,
-  createBox,
-  PrimitiveRenderer,
-  Texture,
-  makeImgFromSvgXml,
-  makeStripeImg,
-  Entity,
-  GLTF,
-  GLcontextWrapper,
-  createCone,
-  createCircle,
-  defaultShaders,
-  pointLightShaders,
-  createSphere,
-  createTruncatedCone,
-} from "graphics";
-import shader from "./src/shader";
 
-import Perlin from "./src/perlinnoise";
-import marchingCubes from "./src/marchingCubes";
-import dual_contour_3d from "./src/dualContour";
-import Terrain from "./src/surfaceMesh";
-import ChunkLoader from "./src/chunkLoader";
-const circleFunc = (x, y, z) =>{
-  return 2 - Math.sqrt(x*x + y*y + z*z)
+const defaultParams = {
+    amplitude :10,
+    octaveSize : 64,
+    discretization : 10,
+    chunkSize : 128
 }
-const circleNormal = (x, y, z) =>{
-  const l = Math.sqrt(x*x + y*y + z*z)
-  return [-x / l, -y / l, -z / l]
-}
-const lol = (x, y, z) =>{
-  return 48- Math.sqrt(x*x + y*y + z*z)
-}
-
-
-const noise128 = new Perlin(128)
-const noise32 = new Perlin(126)
-const f = (x,z) => (noise128.getValue(x, z)*0.5 +0.5) *60 
-const terrain = new Terrain(f, 256, 3)
-const chunk = terrain.getChunk(0,0)
-
-const chunkLoader = new ChunkLoader(terrain)
-chunkLoader.update(0,0)
-console.log(chunkLoader.active)
-
-//console.log(positions, indices)
-const context = new GLcontextWrapper("canvas");
-const gl = context.getContext();
-context.resizeCanvasToDisplaySize();
-const drawer = new Drawer();
-drawer.setContext(context).update3DProjectionMatrix();
-
-const defaultProgramInfo = new ProgramInfo(
-  defaultShaders.vert,
-  defaultShaders.frag
-);
-
-const programInfo = new ProgramInfo(
-  shader.vert,
-  shader.frag
-)
-const pointLightProgramInfo = new ProgramInfo(pointLightShaders.vert, pointLightShaders.frag)
-pointLightProgramInfo.setContext(context).compileShaders().createUniformSetters();
-
-defaultProgramInfo.setContext(context).compileShaders().createUniformSetters();
-programInfo.setContext(context).compileShaders().createUniformSetters();
-
-const primitive = new PrimitiveRenderer({
-  mode: gl.POINTS,
-  
-  offset: 0,
-  attributes : {
-    POSITION : {
-      location : 0,
-      numComponents : 3,
-      type : 5126,
-      data : new Float32Array(chunk.positions ),
-      count : chunk.positions.length 
+const paramsDescription = {
+    amplitude : {
+        max : 150,
+        min : 1,
+        step : 1,
+        name : 'Amplitude'
     },
-    NORMAL : {
-      location : 1,
-      numComponents : 3,
-      type : 5126,
-      data : new Float32Array(chunk.normals),
-      count :  chunk.normals.length 
+    octaveSize : {
+        max : 256,
+        min : 1,
+        step : 1,
+        name : 'Octave size'
+    },
+    discretization : {
+        max : 100,
+        min : 2,
+        step : 1,
+        name : 'Surface discretization'
+    },
+    chunkSize : {
+        max : 256,
+        min : 32,
+        step : 16,
+        name : 'Chunk size'
     }
-  },
-  componentType: 5123,
-  numElements: chunk.indices.length,
-  indices : new Uint16Array(chunk.indices)
-});
+}
 
-primitive.setContext(context)
-  .createVAO()
-  .setDrawer(drawer)
-  .setProgramInfo(pointLightProgramInfo)
-  .createGeometryBuffers()
-  .setAttributes()
-  .setMode(4)
+let chunkLoader = updateTerrainGenerator(defaultParams)
 
-console.log(primitive)
-const uniforms = {
-  u_lightWorldPosition: [1, 20, 10],
-  u_ambientLight: [1, 1, 0.3, 0.11],
-  u_reverseLightDirection: [1, 0, 0],
-  u_shininess: 300,
-};
+chunkLoader.update(cameraPosition[0],cameraPosition[2])
 
-let lastCall = Date.now();
-const fps = document.querySelector("#fps");
-const pos = document.querySelector("#pos");
 
-const loop = () => {
-  const curentTime = Date.now();
-  const delta = curentTime - lastCall;
-  fps.textContent = (1 / delta) * 1000;
-  pos.textContent = `${Math.floor(cPos[0])}; ${Math.floor(cPos[1])}; ${Math.floor(cPos[2])}`
-  lastCall = curentTime;
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  gl.enable(gl.CULL_FACE);
-  gl.enable(gl.DEPTH_TEST);
 
-  cameraMatrix = m4.translation(...cPos);
-  cameraMatrix = m4.yRotate(cameraMatrix, cRot[1]);
-  cameraMatrix = m4.xRotate(cameraMatrix, cRot[0]);
-  
-  uniforms.u_lightWorldPosition = [ 0,50,0]
-  chunkLoader.tick(cPos[0], cPos[2])
-  
-  for(const chunk of chunkLoader.active){
+const updateChunkLoader = (params) =>{
+ 
+    chunkLoader = updateTerrainGenerator(params)
+    chunkLoader.update(cameraPosition[0],cameraPosition[2])
+}
+const root = ReactDOM.createRoot(document.getElementById('ui'))
 
-    primitive.bufferSubData('POSITION', new Float32Array(chunk.positions), null, gl.DYNAMIC_DRAW)
-    .bufferSubData('NORMAL', new Float32Array(chunk.normals), null, gl.DYNAMIC_DRAW)
-    .draw(
-      {
-        ...uniforms,
-        u_matrix: m4.translation(0, 0, 0),
-        u_color: [0.5, 0.3, 0.01, 1],
-        u_worldViewPosition: cameraMatrix,
-      },
-      cameraMatrix
-    );
-  }
-  
-  
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-  requestAnimationFrame(loop);
-};
-loop();
+
+root.render(<App 
+                updateMesh={updateChunkLoader}
+                defaultMeshParams = {defaultParams}
+                paramsDescription = {paramsDescription}
+                >
+            </App>)
+
+const render = ()=>{
+    draw(cameraPosition, cameraRotation, chunkLoader)
+    requestAnimationFrame(render)
+}
+render()

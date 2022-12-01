@@ -13,7 +13,15 @@ module.exports = {
       {
         test : /\.glsl/,
         type : 'asset/source'
-      }
+      },
+      {
+        test: /\.jsx?$/, // определяем тип файлов
+        exclude: /(node_modules)/,  // исключаем из обработки папку node_modules
+        loader: "babel-loader",   // определяем загрузчик
+        options:{
+            presets:[ "@babel/preset-react"]    // используемые плагины
+        }
+    }
     ]
   }
 };

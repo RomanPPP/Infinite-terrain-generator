@@ -9,7 +9,7 @@ const scale = (v, fac) => [v[0] * fac, v[1] * fac]
 const interpolate = (a0, a1, w) => (a1 - a0) * ((w * (w * 6.0 - 15.0) + 10.0) * w * w * w) + a0
 const randomGradient = (x, y) =>{
    
-    const random = Math.random()* Math.PI  //((x * 10156) ^ (y * 15464)) & 255
+    const random = (Math.random())* Math.PI //((x * 10156) ^ (y * 15464)) & 255
     return [Math.cos(random), Math.sin(random)]
 }
 
@@ -74,8 +74,8 @@ export default class Perlin{
         //console.log(fromTopLeft, fromTopRight, fromBottomLeft, fromBottomRight)
         //console.log(tx1, tx2, bx1, bx2)
 
-        localX = quintic(localX)
-        localY = quintic(localY)
+        //localX = quintic(localX)
+        //localY = quintic(localY)
         const tx = interpolate(tx1, tx2, localX)
         const bx = interpolate(bx1, bx2, localX)
         const p = interpolate(tx, bx, localY)

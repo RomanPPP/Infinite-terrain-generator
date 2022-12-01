@@ -19,6 +19,7 @@ export default class ChunkLoader{
         this.dist = 6
         this.lastX = 0
         this.lastZ = 0
+        this.needToUpdate = false
     }
     update(x,z){
 
@@ -42,6 +43,11 @@ export default class ChunkLoader{
         const _x = Math.floor(x/chunkSize) 
         const _z = Math.floor(z/chunkSize) 
         if(_x != lastX || _z !=lastZ)
+        {
             this.update(_x, _z)
+            this.needToUpdate = true
+        }
+            
+
     }   
 }
