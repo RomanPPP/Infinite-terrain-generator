@@ -79,7 +79,7 @@ const updateTerrainGenerator = ({
   chunkSize,
 }) => {
   const noise = new Perlin(octaveSize);
-  const func = (x, z) => (noise.getValue(x, z) * 0.5 + 0.5) * amplitude;
+  const func = (x, z) => ((noise.getValue(x, z)*0.5  + 0.5) * amplitude)**1.5;
 
   const terrain = new Terrain(func, chunkSize, discretization);
   const chunk = terrain.getChunk(0, 0);
