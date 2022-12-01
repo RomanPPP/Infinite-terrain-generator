@@ -1,1 +1,1 @@
-# Surface generator with perlin noise
+# Infinite terrain generator with perlin noise
